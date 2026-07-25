@@ -49,7 +49,7 @@ export async function getCharacterSheet(userId = DEMO_USER_ID) {
   const seasonWeek = activeSeason ? getCurrentSeasonWeek(activeSeason.starts_at as string) : 1;
 
   return {
-    user: { id: user.id, displayName: user.display_name, handle: user.handle },
+    user: { id: String(user.id), displayName: String(user.display_name), handle: String(user.handle) },
     level: levelData,
     totalXp,
     seasonXp: Number(seasonXpRow?.total ?? 0),
@@ -63,18 +63,18 @@ export async function getCharacterSheet(userId = DEMO_USER_ID) {
       length: Number(streak?.current_length ?? 0),
       longestLength: Number(streak?.longest_length ?? 0),
       restTokens: Number(streak?.rest_tokens ?? 0),
-      lastActiveDate: streak?.last_active_date ?? null,
+      lastActiveDate: streak?.last_active_date != null ? String(streak.last_active_date) : null,
     },
     todayQuest: todayQuest ? {
-      id: todayQuest.id,
-      name: todayQuest.name,
+      id: String(todayQuest.id),
+      name: String(todayQuest.name),
       current: Number(todayQuest.current_value),
       target: Number(todayQuest.target_value),
       xpReward: Number(todayQuest.xp_reward),
       completed: todayQuest.state === 'complete',
     } : null,
     season: {
-      id: activeSeason?.id ?? null,
+      id: activeSeason?.id != null ? String(activeSeason.id) : null,
       ordinal: Number(activeSeason?.ordinal ?? 3),
       week: seasonWeek,
     },
@@ -100,7 +100,12 @@ export async function getQuests(userId = DEMO_USER_ID) {
     ORDER BY qa.created_at
   `, [userId]);
 
-  return { weekly, seasonal, weekStart };
+  const mapQuest = (q: Record<string, unknown>) => ({
+    id: String(q.id), name: String(q.name), description: q.description != null ? String(q.description) : '',
+    current_value: Number(q.current_value), target_value: Number(q.target_value),
+    state: String(q.state), xp_reward: Number(q.xp_reward), kind: String(q.kind),
+  });
+  return { weekly: weekly.map(mapQuest), seasonal: seasonal.map(mapQuest), weekStart };
 }
 
 export async function getHistory(userId = DEMO_USER_ID) {
@@ -127,10 +132,16 @@ export async function getHistory(userId = DEMO_USER_ID) {
   `, [userId]);
 
   return {
-    heatmap: rollup,
+    heatmap: rollup.map(r => ({
+      local_date: String(r.local_date), session_count: Number(r.session_count), xp: Number(r.xp),
+    })),
     totalSessions: Number(stats?.total_sessions ?? 0),
     personalRecordCount: Number(prCount?.cnt ?? 0),
-    personalRecords: prs,
+    personalRecords: prs.map(r => ({
+      exercise_name: String(r.exercise_name), metric: String(r.metric),
+      value: Number(r.value), previous_value: r.previous_value != null ? Number(r.previous_value) : null,
+      local_date: String(r.local_date), modality: String(r.modality), verified: Boolean(r.verified),
+    })),
   };
 }
 
@@ -174,14 +185,13 @@ export async function getCrewLeaderboard(userId = DEMO_USER_ID) {
 
   return {
     crewId,
-    crewName: crewInfo?.name,
-    inviteCode: crewInfo?.invite_code,
+    crewName: crewInfo?.name != null ? String(crewInfo.name) : '',
+    inviteCode: crewInfo?.invite_code != null ? String(crewInfo.invite_code) : '',
     members: members.map((m, i) => ({
-      ...m,
-      season_xp: Number(m.season_xp),
-      rank: i + 1,
-      isMe: m.id === userId,
-      hasNodFromMe: noddedIds.includes(m.id as string),
+      id: String(m.id), display_name: String(m.display_name), handle: String(m.handle),
+      season_xp: Number(m.season_xp), role: String(m.role),
+      rank: i + 1, isMe: m.id === userId,
+      hasNodFromMe: noddedIds.includes(String(m.id)),
     })),
     myRank,
     nodsUsedToday: Number(myNodCount?.cnt ?? 0),
