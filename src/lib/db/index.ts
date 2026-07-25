@@ -2,7 +2,7 @@ import { createClient } from '@libsql/client';
 import path from 'path';
 
 export const client = createClient({
-  url: process.env.TURSO_DATABASE_URL || `file:${path.join(process.cwd(), 'ascend.db')}`,
+  url: process.env.TURSO_DATABASE_URL || `file:${process.env.VERCEL ? '/tmp/ascend.db' : path.join(process.cwd(), 'ascend.db')}`,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
